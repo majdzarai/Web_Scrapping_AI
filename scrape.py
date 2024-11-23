@@ -9,21 +9,21 @@ from selenium.webdriver.chrome.options import Options
 
 
 def install_chrome():
-    """Install Chrome on Linux cloud environments."""
+    """Install Chrome on Linux environments without sudo."""
     try:
         print("Installing Chrome...")
-        subprocess.run(["sudo", "apt-get", "update"], check=True)
-        subprocess.run(["sudo", "apt-get", "install", "-y", "google-chrome-stable"], check=True)
+        subprocess.run(["apt-get", "update"], check=True)
+        subprocess.run(["apt-get", "install", "-y", "google-chrome-stable"], check=True)
         print("Chrome installed successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error installing Chrome: {e}")
         raise e
 
 
+
 def scrape_website(website):
     print("Launching Chrome browser...")
 
-    # Configure Chrome options
     options = Options()
     options.add_argument("--headless")  # Run in headless mode
     options.add_argument("--no-sandbox")
@@ -32,18 +32,10 @@ def scrape_website(website):
     options.add_argument("--ignore-certificate-errors")
     options.add_argument("--disable-blink-features=AutomationControlled")
 
-    # Check if Chrome is installed (Linux/Cloud environments)
-    if os.name != 'nt':  # Not running on Windows (Linux/Cloud environments)
-        if not os.path.exists("/usr/bin/google-chrome"):
-            install_chrome()
+    # Use chromedriver_autoinstaller
+    try:
         chromedriver_path = chromedriver_autoinstaller.install()
         driver = webdriver.Chrome(service=Service(chromedriver_path), options=options)
-
-    else:  # For local Windows
-        chrome_driver_path = "./chromedriver.exe"
-        driver = webdriver.Chrome(service=Service(chrome_driver_path), options=options)
-
-    try:
         driver.get(website)
         print("Page Loaded...")
         html = driver.page_source
@@ -53,6 +45,7 @@ def scrape_website(website):
         raise e
     finally:
         driver.quit()
+
 
 def extract_body_content(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
