@@ -4,12 +4,27 @@ import chromedriver_autoinstaller
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import os
+import subprocess
+from selenium.webdriver.chrome.options import Options
+
+
+def install_chrome():
+    """Install Chrome on Linux cloud environments."""
+    try:
+        print("Installing Chrome...")
+        subprocess.run(["sudo", "apt-get", "update"], check=True)
+        subprocess.run(["sudo", "apt-get", "install", "-y", "google-chrome-stable"], check=True)
+        print("Chrome installed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error installing Chrome: {e}")
+        raise e
+
 
 def scrape_website(website):
     print("Launching Chrome browser...")
 
     # Configure Chrome options
-    options = webdriver.ChromeOptions()
+    options = Options()
     options.add_argument("--headless")  # Run in headless mode
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
@@ -17,21 +32,25 @@ def scrape_website(website):
     options.add_argument("--ignore-certificate-errors")
     options.add_argument("--disable-blink-features=AutomationControlled")
 
-    # Check if running locally or in a cloud environment
-    if os.name == 'nt':  # Running on Windows (local environment)
-        print("Running on Windows (local). Using chromedriver.exe.")
-        chrome_driver_path = "./chromedriver.exe"  # Path to ChromeDriver for Windows
+    # Check if Chrome is installed (Linux/Cloud environments)
+    if os.name != 'nt':  # Not running on Windows (Linux/Cloud environments)
+        if not os.path.exists("/usr/bin/google-chrome"):
+            install_chrome()
+        chromedriver_path = chromedriver_autoinstaller.install()
+        driver = webdriver.Chrome(service=Service(chromedriver_path), options=options)
+
+    else:  # For local Windows
+        chrome_driver_path = "./chromedriver.exe"
         driver = webdriver.Chrome(service=Service(chrome_driver_path), options=options)
-    else:  # Running on Linux (cloud environment)
-        print("Running in cloud environment. Using chromedriver-autoinstaller.")
-        chromedriver_autoinstaller.install()  # Automatically install correct version
-        driver = webdriver.Chrome(options=options)
 
     try:
         driver.get(website)
         print("Page Loaded...")
         html = driver.page_source
         return html
+    except Exception as e:
+        print(f"Error accessing {website}: {e}")
+        raise e
     finally:
         driver.quit()
 
